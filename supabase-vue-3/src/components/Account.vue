@@ -1,6 +1,7 @@
 <script setup>
 import { supabase } from '../supabase'
 import { onMounted, ref, toRefs } from 'vue'
+import router from '../router/index.js'
 
 const props = defineProps(['session'])
 const { session } = toRefs(props)
@@ -8,6 +9,9 @@ const { session } = toRefs(props)
 const loading = ref(true)
 const username = ref('')
 
+const redirect = () => {
+  router.push('/Log')
+}
 
 onMounted(() => {
   getProfile()
@@ -87,9 +91,11 @@ async function signOut() {
         :value="loading ? 'Loading ...' : 'Update'"
         :disabled="loading"/>
     </div>
+
     <div>
-        <button>Go to Logging Page</button>
-    </div>
+        <button @click="redirect">Go to Logging Page</button>
+      </div>
+
     <div>
       <button class="button block" @click="signOut" :disabled="loading">Sign Out</button>
     </div>
