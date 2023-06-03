@@ -9,7 +9,7 @@ const { session } = toRefs(props)
 const loading = ref(true)
 const username = ref('')
 
-const redirect = () => {
+ redirect = () => {
   router.push('/Log')
 }
 
