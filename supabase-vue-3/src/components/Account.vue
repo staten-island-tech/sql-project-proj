@@ -6,7 +6,7 @@ import router from '../router/index.js'
 const props = defineProps(['session'])
 const { session } = toRefs(props)
 
-const loading = ref(true)
+const loading = ref(false)
 const username = ref('')
 
  const redirect = () => {
@@ -93,11 +93,12 @@ async function signOut() {
     </div>
 
     <div>
-        <button @click="redirect">Go to Logging Page</button>
-      </div>
-
-    <div>
       <button class="button block" @click="signOut" :disabled="loading">Sign Out</button>
     </div>
   </form>
+  <div>
+    <RouterLink to="/Log">
+        <button>Go to Logging Page</button>
+</RouterLink>
+      </div>
 </template>
