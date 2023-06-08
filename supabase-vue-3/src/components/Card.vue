@@ -1,7 +1,7 @@
 <template>
     <div class="cards">
         <img class="card-img" v-bind:src='image' alt="">
-        <h1 class="card-title">{{title}}</h1>
+        <h1 class="card-Title">{{Title}}</h1>
         <p class="card-description">{{description}}</p>
         <div class="card-line">
             <h3 class="card-cost">${{cost}}.00</h3>
@@ -14,7 +14,7 @@
 export default {
         name: "Card",
         props:{
-            title:String,
+            Title:String,
        image:String,
        cost: String,
        description: String,
