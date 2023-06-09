@@ -87,12 +87,10 @@ const useBookStore = defineStore('bookStore', {
             throw error;
           }
 
-          // Update the local state with the submitted values
           this.cards.push(values);
           this.showOutput = true;
           this.resetInputs();
 
-          // Update local storage after submitting a new card
           localStorage.setItem('submittedValues', JSON.stringify(this.cards));
         } catch (error) {
           console.error('Error inserting values:', error.message);
@@ -102,7 +100,6 @@ const useBookStore = defineStore('bookStore', {
     removeCard(index) {
       this.cards.splice(index, 1);
 
-      // Update local storage after removing a card
       localStorage.setItem('submittedValues', JSON.stringify(this.cards));
     },
     async signOut() {
@@ -123,7 +120,6 @@ const useBookStore = defineStore('bookStore', {
 
 const bookStore = useBookStore();
 
-// Retrieve submitted values from local storage on component mount
 onMounted(() => {
   const storedValues = localStorage.getItem('submittedValues');
   if (storedValues) {
