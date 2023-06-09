@@ -27,21 +27,22 @@
         </div>
       </div>
       <div>
-        <button class="button block" @click="signOut" :disabled="loading">Sign Out</button>
-      </div>
+      <button class="button block" @click="signOut" :disabled="loading">Sign Out</button>
+    </div>
     </div>
   </template>
   
   <script setup>
-  import { ref, onMounted, onUnmounted } from 'vue';
+  import { ref } from 'vue';
   import { createClient } from '@supabase/supabase-js';
   
   // Initialize Supabase client
   const supabaseUrl = 'https://uxufjlzukuzxdfnggdtd.supabase.co';
   const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4dWZqbHp1a3V6eGRmbmdnZHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODU2NTA2MjMsImV4cCI6MjAwMTIyNjYyM30.cHcOH7-bYmuCA4cNZSFNhW88-XjH1E64_wwAO2yZdmQ';
   const supabase = createClient(supabaseUrl, supabaseKey);
-  
-  const loading = ref(false);
+
+  const loading = ref(false)
+
   
   const beginLogging = ref(false);
   const showOutput = ref(false);
@@ -88,16 +89,16 @@
   };
   
   const removeCard = async (index) => {
-    const values = submittedValues.value[index];
+  const values = submittedValues.value[index];
   
-     // Delete the record from the Supabase table
+  // Delete the record from the Supabase table
   const { data, error } = await supabase
     .from('bookLog')
     .delete()
     .eq('author', values[0])
     .eq('title', values[1])
     .eq('rating', values[2]);
-
+  
   if (error) {
     console.error('Error deleting record:', error.message);
   } else {
@@ -105,53 +106,28 @@
   }
 };
 
-const signOut = async () => {
+async function signOut() {
   try {
-    loading.value = true;
-    await supabase.auth.signOut();
-    // Save the submitted values before signing out
-    await saveSubmittedValues();
+    loading.value = true
+    let { error } = await supabase.auth.signOut()
+    if (error) throw error
   } catch (error) {
-    alert(error.message);
+    alert(error.message)
   } finally {
-    loading.value = false;
+    loading.value = false
   }
-};
-
-const saveSubmittedValues = async () => {
-  try {
-    const { data, error } = await supabase
-      .from('submittedValues')
-      .upsert([{ id: 1, values: submittedValues.value }], { onConflict: ['id'] });
-
-    if (error) {
-      console.error('Error saving submitted values:', error.message);
-    }
-  } catch (error) {
-    console.error('Error saving submitted values:', error.message);
+}
+  
+  // Rest  the code...
+  
+  </script>
+  
+  <style>
+  .card-list {
+    display: flex;
+    
   }
-};
+</style>  
 
-// Load submitted values on component mount
-onMounted(async () => {
-  try {
-    const { data, error } = await supabase.from('submittedValues').select();
 
-    if (error) {
-      console.error('Error loading submitted values:', error.message);
-    } else {
-      if (data.length > 0 && data[0].values) {
-        submittedValues.value = data[0].values;
-        showOutput.value = true;
-      }
-    }
-  } catch (error) {
-    console.error('Error loading submitted values:', error.message);
-  }
-});
-
-// Save submitted values before component unmounts
-onUnmounted(async () => {
-  await saveSubmittedValues();
-});
-</script>
+  
