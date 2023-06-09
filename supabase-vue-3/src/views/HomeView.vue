@@ -7,7 +7,18 @@ import { onMounted, ref, toRefs } from 'vue'
 </script>
 
 <template>
-  <div>
+  <div class="container">
     <Account :session="session"></Account>
   </div>
 </template>
+
+<style>
+.container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+</style>
+
+
