@@ -1,177 +1,148 @@
 <template>
   <div class="container">
     <h1>Book Log</h1>
-    <form @submit.prevent="submit" class="form">
+    <form @submit.prevent="bookStore.submit" class="form">
       <div class="form-group">
         <label class="form-label">Author:</label>
-        <input class="form-input" type="text" placeholder="Enter author" v-model="inputValue1" required />
+        <input class="form-input" type="text" placeholder="Enter author" v-model="bookStore.author" required />
       </div>
       <div class="form-group">
         <label class="form-label">Title of Book:</label>
-        <input class="form-input" type="text" placeholder="Enter title" v-model="inputValue2" required />
+        <input class="form-input" type="text" placeholder="Enter title" v-model="bookStore.title" required />
       </div>
       <div class="form-group">
         <label class="form-label">Rating:</label>
-        <input class="form-input" type="text" placeholder="Enter rating" v-model="inputValue3" required />
+        <input class="form-input" type="text" placeholder="Enter rating" v-model="bookStore.rating" required />
       </div>
       <button type="submit" class="button">Submit</button>
     </form>
 
-    <div class="card-list" v-if="showOutput">
-      <div v-for="(value, index) in submittedValues" :key="index" class="card">
-        <div v-for="(inputValue, inputIndex) in value" :key="inputIndex">
+    <div class="card-list" v-if="bookStore.showOutput">
+      <div v-for="(card, index) in bookStore.cards" :key="index" class="card">
+        <div v-for="(value, inputIndex) in card" :key="inputIndex">
           <span v-if="inputIndex === 0">Author:</span>
           <span v-else-if="inputIndex === 1">Title of Book:</span>
           <span v-else-if="inputIndex === 2">Rating:</span>
-          {{ inputValue }}<br />
+          {{ value }}<br />
         </div>
-        <button @click="removeCard(index)" class="button">Remove</button>
+        <button @click="bookStore.removeCard(index)" class="button">Remove</button>
       </div>
     </div>
 
     <div>
-      <button class="button block" @click="signOut" :disabled="loading">Sign Out</button>
+      <button class="button block" @click="bookStore.signOut" :disabled="bookStore.loading">Sign Out</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
+import { createPinia, defineStore } from 'pinia';
 import { createClient } from '@supabase/supabase-js';
-import { createPinia } from 'pinia';
 
 // Initialize Supabase client
 const supabaseUrl = 'https://uxufjlzukuzxdfnggdtd.supabase.co';
 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4dWZqbHp1a3V6eGRmbmdnZHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODU2NTA2MjMsImV4cCI6MjAwMTIyNjYyM30.cHcOH7-bYmuCA4cNZSFNhW88-XjH1E64_wwAO2yZdmQ';
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Create Pinia store
+// Define Pinia store
 const pinia = createPinia();
 
-const loading = ref(false);
-const beginLogging = ref(false);
-const showOutput = ref(false);
-const inputValue1 = ref('');
-const inputValue2 = ref('');
-const inputValue3 = ref('');
-const submittedValues = ref([]);
+const useBookStore = defineStore('bookStore', {
+  state: () => ({
+    loading: false,
+    showOutput: false,
+    author: '',
+    title: '',
+    rating: '',
+    cards: [],
+  }),
+  actions: {
+    validateInputs() {
+      if (!this.author || !this.title || !this.rating) {
+        alert('Please fill in all required fields.');
+        return false;
+      }
+      return true;
+    },
+    resetInputs() {
+      this.author = '';
+      this.title = '';
+      this.rating = '';
+    },
+    async submit() {
+      if (this.validateInputs()) {
+        const values = [
+          this.author.trim(),
+          this.title.trim(),
+          this.rating.trim(),
+        ];
 
-const validateInputs = () => {
-  if (!inputValue1.value || !inputValue2.value || !inputValue3.value) {
-    alert('Please fill in all required fields.');
-    return false;
-  }
-  return true;
-};
+        // Insert values into the Supabase table
+        try {
+          const { data, error } = await supabase.from('bookLog').insert([
+            { author: values[0], title: values[1], rating: values[2] },
+          ]);
+          if (error) {
+            throw error;
+          }
 
-const resetInputs = () => {
-  inputValue1.value = '';
-  inputValue2.value = '';
-  inputValue3.value = '';
-};
+          // Update the local state with the submitted values
+          this.cards.push(values);
+          this.showOutput = true;
+          this.resetInputs();
 
-const submit = async () => {
-  if (validateInputs()) {
-    const values = [
-      inputValue1.value.trim(),
-      inputValue2.value.trim(),
-      inputValue3.value.trim(),
-    ];
+          // Update local storage after submitting a new card
+          localStorage.setItem('submittedValues', JSON.stringify(this.cards));
+        } catch (error) {
+          console.error('Error inserting values:', error.message);
+        }
+      }
+    },
+    removeCard(index) {
+      this.cards.splice(index, 1);
 
-    // Insert values into the Supabase table
-    const { data, error } = await supabase.from('bookLog').insert([
-      { author: values[0], title: values[1], rating: values[2] },
-    ]);
+      // Update local storage after removing a card
+      localStorage.setItem('submittedValues', JSON.stringify(this.cards));
+    },
+    async signOut() {
+      try {
+        this.loading = true;
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          throw error;
+        }
+      } catch (error) {
+        alert(error.message);
+      } finally {
+        this.loading = false;
+      }
+    },
+  },
+});
 
-    if (error) {
-      console.error('Error inserting values:', error.message);
-    } else {
-      submittedValues.value.push(values);
-      showOutput.value = true;
-      resetInputs();
-
-      // Update local storage after submitting a new card
-      localStorage.setItem('submittedValues', JSON.stringify(submittedValues.value));
-    }
-  }
-};
-
-const removeCard = async (index) => {
-  const values = submittedValues.value[index];
-
-  // Delete the record from the Supabase table
-  const { data, error } = await supabase
-    .from('bookLog')
-    .delete()
-    .eq('author', values[0])
-    .eq('title', values[1])
-    .eq('rating', values[2]);
-
-  if (error) {
-    console.error('Error deleting record:', error.message);
-  } else {
-    submittedValues.value.splice(index, 1);
-
-    // Update local storage after removing the card
-    localStorage.setItem('submittedValues', JSON.stringify(submittedValues.value));
-  }
-};
-
-async function signOut() {
-  try {
-    loading.value = true;
-    let { error } = await supabase.auth.signOut();
-    if (error) throw error;
-  } catch (error) {
-    alert(error.message);
-  } finally {
-    loading.value = false;
-  }
-}
+const bookStore = useBookStore();
 
 // Retrieve submitted values from local storage on component mount
 onMounted(() => {
   const storedValues = localStorage.getItem('submittedValues');
   if (storedValues) {
-    submittedValues.value = JSON.parse(storedValues);
-    showOutput.value = true;
+    bookStore.cards = JSON.parse(storedValues);
+    bookStore.showOutput = true;
   }
 });
 </script>
 
-<style>
+<style scoped>
 .container {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
+  max-width: 400px;
+  margin: 0 auto;
   padding: 20px;
-  background-color: #f2f2f2;
-  font-family: Arial, sans-serif;
-}
-
-.button {
-  display: inline-block;
-  padding: 10px 20px;
-  font-size: 16px;
-  font-weight: bold;
   text-align: center;
-  text-decoration: none;
-  background-color: #4caf50;
-  color: #ffffff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.button:hover {
-  background-color: #45a049;
 }
 
 .form {
-  display: flex;
-  flex-direction: column;
+  margin-bottom: 20px;
 }
 
 .form-group {
@@ -179,35 +150,44 @@ onMounted(() => {
 }
 
 .form-label {
-  font-weight: bold;
+  display: block;
 }
 
 .form-input {
+  width: 100%;
   padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  font-size: 14px;
 }
 
-.card-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+.button {
+  padding: 8px 12px;
+  font-size: 14px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  margin-bottom: 10px;
+}
+
+.button.block {
+  display: block;
+  width: 100%;
 }
 
 .card {
-  width: 250px;
+  border: 1px solid #ccc;
   padding: 10px;
-  margin: 10px;
-  background-color: #ffffff;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  margin-bottom: 10px;
 }
 
-.card span:first-child {
-  font-weight: bold;
-}
-
-.card button {
-  margin-top: 10px;
+.card-list {
+  margin-top: 20px;
 }
 </style>
+
+
+
+<!-- 
+const supabaseUrl = 'https://uxufjlzukuzxdfnggdtd.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4dWZqbHp1a3V6eGRmbmdnZHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODU2NTA2MjMsImV4cCI6MjAwMTIyNjYyM30.cHcOH7-bYmuCA4cNZSFNhW88-XjH1E64_wwAO2yZdmQ';
+const supabase = createClient(supabaseUrl, supabaseKey); -->
